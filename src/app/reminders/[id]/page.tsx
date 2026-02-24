@@ -4,7 +4,7 @@ import { use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowLeft, Clock, Edit, Repeat, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock, Edit, Repeat, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +13,9 @@ import { Separator } from "@/components/ui/separator";
 import { db } from "@/lib/db/client";
 import { softDeleteItem, updateItem } from "@/lib/db/repositories/item-repository";
 import type { ReminderItem } from "@/lib/models/item";
-import { formatDateTime } from "@/lib/utils/dates";
+import { formatDateTime, formatRelative } from "@/lib/utils/dates";
 import { describeRecurrence } from "@/lib/models/recurrence";
+import { getNextReminderDate, getUpcomingOccurrences } from "@/lib/services/recurrence-engine";
 
 export default function ReminderDetailPage({
   params,
@@ -123,6 +124,32 @@ export default function ReminderDetailPage({
                 ))}
               </div>
             </div>
+
+            {(() => {
+              const nextDate = getNextReminderDate(reminder);
+              if (!nextDate) return null;
+              return (
+                <div className="flex items-center gap-2 text-sm">
+                  <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                  <span>Next: {formatDateTime(nextDate.toISOString())} ({formatRelative(nextDate.toISOString())})</span>
+                </div>
+              );
+            })()}
+
+            {data.rrule && (() => {
+              const upcoming = getUpcomingOccurrences(reminder, 5);
+              if (upcoming.length <= 1) return null;
+              return (
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">Upcoming:</span>
+                  <ul className="text-sm space-y-0.5 ml-6 list-disc text-muted-foreground">
+                    {upcoming.map((d) => (
+                      <li key={d.toISOString()}>{formatDateTime(d.toISOString())}</li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Status:</span>

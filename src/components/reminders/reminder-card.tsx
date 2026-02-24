@@ -1,12 +1,14 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
-import { Bell, Clock, Repeat } from "lucide-react";
+import { Bell, CalendarClock, Clock, Repeat } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { ReminderItem } from "@/lib/models/item";
 import { formatDateTime, formatRelative } from "@/lib/utils/dates";
 import { describeRecurrence } from "@/lib/models/recurrence";
+import { getNextReminderDate } from "@/lib/services/recurrence-engine";
 
 interface ReminderCardProps {
   reminder: ReminderItem;
@@ -15,6 +17,8 @@ interface ReminderCardProps {
 export function ReminderCard({ reminder }: ReminderCardProps) {
   const { data } = reminder;
   const isPast = new Date(data.datetime) < new Date();
+
+  const nextDate = useMemo(() => getNextReminderDate(reminder), [reminder]);
 
   return (
     <Link href={`/reminders/${reminder.id}`}>
@@ -36,7 +40,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
             </p>
           )}
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {formatDateTime(data.datetime)}
@@ -50,6 +54,12 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
               <span className="flex items-center gap-1">
                 <Repeat className="h-3 w-3" />
                 {describeRecurrence(data.rrule)}
+              </span>
+            )}
+            {nextDate && (
+              <span className="flex items-center gap-1 text-foreground">
+                <CalendarClock className="h-3 w-3" />
+                Next: {formatRelative(nextDate.toISOString())}
               </span>
             )}
           </div>

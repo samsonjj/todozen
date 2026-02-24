@@ -11,7 +11,8 @@ import { DatetimePicker } from "@/components/reminders/datetime-picker";
 import { RecurrencePicker } from "@/components/reminders/recurrence-picker";
 import { PreAlertPicker } from "@/components/reminders/pre-alert-picker";
 import { createReminderItem, type ReminderItem } from "@/lib/models/item";
-import { createItem, updateItem } from "@/lib/db/repositories/item-repository";
+import { createItem, updateItem, getItem } from "@/lib/db/repositories/item-repository";
+import { scheduleNotificationsForReminder } from "@/lib/services/notification-scheduler";
 import { getUserTimezone } from "@/lib/utils/dates";
 
 interface ReminderFormProps {
@@ -52,6 +53,10 @@ export function ReminderForm({ reminder }: ReminderFormProps) {
             preAlerts,
           },
         });
+        const updated = await getItem(reminder.id);
+        if (updated) {
+          await scheduleNotificationsForReminder(updated as unknown as ReminderItem);
+        }
         toast.success("Reminder updated");
         router.push(`/reminders/${reminder.id}`);
       } else {
@@ -64,6 +69,7 @@ export function ReminderForm({ reminder }: ReminderFormProps) {
           timezone: getUserTimezone(),
         });
         await createItem(item);
+        await scheduleNotificationsForReminder(item);
         toast.success("Reminder created");
         router.push("/reminders");
       }
